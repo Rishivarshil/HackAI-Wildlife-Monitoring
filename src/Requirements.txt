@@ -1,6 +1,4 @@
-import json
-import os
-from typing import Dict, List, Tuple, Any
-
-from PIL import Image
-from bioclip import TreeOfLifeClassifier, Rank
+ultralytics
+pybioclip
+pillow
+torch
