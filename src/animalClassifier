@@ -195,7 +195,7 @@ if __name__ == "__main__":
         yolo_weights="yolov8n.pt",
         yolo_conf=0.25,
         yolo_iou=0.7,
-        yolo_classes=None,
+        yolo_classes=None,      # set to [16] if you ONLY want COCO "dog" detections
         bioclip_threshold=0.55,
         device="cpu",
     )
