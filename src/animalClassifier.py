@@ -1,33 +1,43 @@
 import os
 from ultralytics import YOLO
 
-# Load a pretrained YOLOv8n model
+# Load model
 model = YOLO("yolov8n.pt")
 
-# Run inference on your images folder (save=False initially; we'll save selectively)
-results = model(r"C:\Users\bhara\Downloads\Pictures", save=False, conf=0.25)
+# Path to images
+image_folder = r"C:\Users\bhara\Downloads\Pictures"
 
-# Process results
+# Run inference (lower threshold here so we can manually filter)
+results = model(image_folder, save=False, conf=0.25)
+
 for result in results:
     print(f"\n📷 {result.path}")
 
-    # Filter boxes to only those with confidence > 0.5
-    high_conf_boxes = [
-        box for box in (result.boxes if result.boxes is not None else [])
+    if result.boxes is None or len(result.boxes) == 0:
+        print("  No detections — deleting image")
+        os.remove(result.path)
+        continue
+
+    # Keep only boxes with confidence > 0.5
+    keep_indices = [
+        i for i, box in enumerate(result.boxes)
         if float(box.conf[0]) > 0.5
     ]
 
-    if high_conf_boxes:
-        for box in high_conf_boxes:
+    if len(keep_indices) > 0:
+        for i in keep_indices:
+            box = result.boxes[i]
             cls_id = int(box.cls[0])
             cls_name = model.names[cls_id]
             conf = float(box.conf[0])
             coords = box.xyxy[0].tolist()
             print(f"  ✓ {cls_name}: {conf:.2f} at {coords}")
-        # Save only images with qualifying detections
+
+        # Save annotated image
         result.save()
+
     else:
-        print("  No detections above 0.5 — deleting input image")
+        print("  No detections above 0.5 — deleting image")
         try:
             os.remove(result.path)
             print(f"  Deleted: {result.path}")
