@@ -1,3 +1,10 @@
+import json
+import os
+from typing import Dict, List, Tuple, Any
+
+from PIL import Image
+from bioclip import TreeOfLifeClassifier, Rank
+
 Box = Tuple[float, float, float, float]
 
 
@@ -7,11 +14,13 @@ def clamp_box_xyxy(box: Box, w: int, h: int) -> Tuple[int, int, int, int]:
     y1 = max(0, min(int(round(y1)), h - 1))
     x2 = max(0, min(int(round(x2)), w - 1))
     y2 = max(0, min(int(round(y2)), h - 1))
+
     # Ensure proper ordering
     if x2 < x1:
         x1, x2 = x2, x1
     if y2 < y1:
         y1, y2 = y2, y1
+
     return x1, y1, x2, y2
 
 
@@ -19,7 +28,7 @@ def crop_from_box(img: Image.Image, box: Box) -> Image.Image:
     w, h = img.size
     x1, y1, x2, y2 = clamp_box_xyxy(box, w, h)
 
-    # If the crop is too small / degenerate, return None-like via exception
+    # If the crop is too small / degenerate, skip it
     if (x2 - x1) < 2 or (y2 - y1) < 2:
         raise ValueError(f"Degenerate crop: {(x1, y1, x2, y2)}")
 
@@ -31,7 +40,7 @@ def filter_boxes_with_bioclip(
     boxes_json_path: str,
     out_filtered_boxes_path: str = "filtered_boxes.json",
     out_labels_path: str = "bioclip_labels.json",
-    score_threshold: float = 0.60,
+    score_threshold: float = 0.55,  # ✅ updated threshold
     device: str = "cpu",
 ) -> None:
     """
@@ -43,7 +52,6 @@ def filter_boxes_with_bioclip(
         boxes_by_image: Dict[str, List[List[float]]] = json.load(f)
 
     # BioCLIP Tree-of-Life classifier (species rank), top-1
-    # Note: pybioclip defaults to BioCLIP-2 under the hood in recent versions.
     classifier = TreeOfLifeClassifier(device=device)
 
     filtered: Dict[str, List[List[float]]] = {}
@@ -65,7 +73,7 @@ def filter_boxes_with_bioclip(
         crop_meta: List[Dict[str, Any]] = []
         for i, b in enumerate(boxes):
             try:
-                crop = crop_from_box(img, tuple(b))
+                crop = crop_from_box(img, tuple(b))  # type: ignore[arg-type]
                 crops.append(crop)
                 crop_meta.append({"index": i, "box": b})
             except Exception as e:
@@ -75,10 +83,10 @@ def filter_boxes_with_bioclip(
             continue
 
         # Predict top-1 at species rank
-        # Returns a flat list of rows; each row includes "file_name" key (index as string when PIL images used)
+        # For PIL images, pybioclip returns "file_name" as "0", "1", ...
         preds = classifier.predict(crops, rank=Rank.SPECIES, k=1)
 
-        # Group predictions by crop index (file_name is "0", "1", ...)
+        # Map predictions by crop index
         pred_by_crop_idx: Dict[int, Dict[str, Any]] = {}
         for row in preds:
             crop_idx = int(row["file_name"])
@@ -121,16 +129,17 @@ def filter_boxes_with_bioclip(
     with open(out_labels_path, "w", encoding="utf-8") as f:
         json.dump(labels, f, indent=2)
 
-    print(f"✅ Wrote: {out_filtered_boxes_path} ({sum(len(v) for v in filtered.values())} boxes kept)")
+    kept_total = sum(len(v) for v in filtered.values())
+    print(f"✅ Wrote: {out_filtered_boxes_path} ({kept_total} boxes kept; threshold={score_threshold})")
     print(f"✅ Wrote: {out_labels_path}")
 
 
 if __name__ == "__main__":
-    # Example usage:
+    # Run:
     #   python filter_bioclip.py
     filter_boxes_with_bioclip(
         images_dir="frames",
         boxes_json_path="dog_boxes.json",
-        score_threshold=0.60,
-        device="cpu",  # change to "cuda" on a GPU machine
+        score_threshold=0.55,  # ✅ updated threshold
+        device="cpu",
     )
