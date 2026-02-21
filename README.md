@@ -96,7 +96,7 @@ pip install librosa matplotlib
 
 # Pipeline Workflow
 
-<img width="1920" height="1080" alt="Logicflow-Diagram" src="https://github.com/user-attachments/assets/f508adbe-4145-4643-b59d-97c648448e7a" />
+<img width="2604" height="836" alt="Cropped-logiclow" src="https://github.com/user-attachments/assets/e9358140-db2a-478e-9668-823a9be25400" />
 
 ## Step 1: Motion Trigger
 
