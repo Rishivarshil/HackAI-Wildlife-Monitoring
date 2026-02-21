@@ -1,1 +1,14 @@
+<<<<<<< HEAD
 .csv
+=======
+# Virtual environments
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Mac junk
+.DS_Store
+>>>>>>> e7d7936 (Initial commit)
