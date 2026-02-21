@@ -96,6 +96,8 @@ pip install librosa matplotlib
 
 # Pipeline Workflow
 
+<img width="1920" height="1080" alt="Logicflow-Diagram" src="https://github.com/user-attachments/assets/a230ccaa-17d7-4994-b643-1fe0a0944249" />
+
 ## Step 1: Motion Trigger
 
 When PIR detects motion:
