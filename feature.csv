@@ -1,0 +1,2 @@
+duration_s,snr_db,f0_mean_hz,f0_min_hz,f0_max_hz,intensity_min_db,intensity_max_db,f1_mean_hz,f2_mean_hz,rms_energy_mean,rms_energy_std,spectral_centroid_mean,spectral_bandwidth_mean,spectral_rolloff_95,zcr_mean,zcr_std,time_to_peak_s,mfcc1_mean,mfcc1_std,mfcc2_mean,mfcc2_std,mfcc3_mean,mfcc3_std,voiced_ratio
+,,,,,,,,,,,,,,,,,,,,,,,

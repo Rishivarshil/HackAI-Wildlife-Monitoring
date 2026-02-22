@@ -40,21 +40,24 @@ import zipfile
 import io
 import sys
 
+import joblib
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.discriminant_analysis import StandardScaler
 import noisereduce as nr
 import librosa
 import librosa.display
 import soundfile as sf
 import parselmouth  # praat-parselmouth
 from scipy.signal import butter, filtfilt, stft
+from tensorflow.keras.models import load_model
 
 # ============================================================
 # 2. Upload ZIP and extract it into ./data
 # ============================================================
 #data_root = input("Enter the full path to your audio directory: ").strip()
-data_root = sys.argv[1] 
+input_path = sys.argv[1] 
 
 # ============================================================
 # 3. Helper functions: feature computation
@@ -87,7 +90,7 @@ def clean_audio(y, sr):
     """
     # 1. DC Offset & Normalization
     y = y - np.mean(y)
-    compute_spectrogram(y, output_path="unnormalized.png")
+    compute_spectrogram(y, sr, output_path="unnormalized.png")
     y = librosa.util.normalize(y)
     
     # 2. Band-pass filter to remove wind/low-rumble and high-freq static
@@ -289,7 +292,7 @@ def compute_mfcc_features(y, sr, n_mfcc=3):
             feats.append(float(np.std(coef)))
     return feats
 
-def compute_spectrogram(audio, output_path):
+def compute_spectrogram(audio, sr,output_path):
     NFFT = 2048
     HOP = 256
 
@@ -301,7 +304,7 @@ def compute_spectrogram(audio, output_path):
     # --- STFT ---
     f, t, Zxx = stft(
         audio,
-        fs=44100,
+        fs=sr,
         nperseg=NFFT,
         noverlap=NFFT - HOP,
         nfft=NFFT,
@@ -345,22 +348,21 @@ def find_audio_files(root_dir, exts=(".wav", ".mp3", ".flac", ".ogg", ".m4a")):
                 audio_paths.append(full_path)
     return audio_paths
 
-audio_files = find_audio_files(data_root)
-print(f"Found {len(audio_files)} audio files.")
+#audio_files = find_audio_files(data_root)
+#print(f"Found {len(audio_files)} audio files.")
 
-if len(audio_files) == 0:
-    print("WARNING: No audio files found. Please check your ZIP structure and extensions.")
+#if len(audio_files) == 0:
+ #   print("WARNING: No audio files found. Please check your ZIP structure and extensions.")
 
 # ============================================================
 # 5. Compute 24 features for each file
 # ============================================================
 
-print(audio_files[0])
 try:
 
     #compute_spectrogram(audio_files, output_path=data_root + "unnormalized.png")
-    y, sr = load_audio(audio_files[0], sr=SR_TARGET)
-    compute_spectrogram(y, output_path="normalized.png")
+    y, sr = load_audio(input_path, sr=SR_TARGET)
+    compute_spectrogram(y, sr, output_path="normalized.png")
 
     if len(y) == 0 or sr <= 0:
         raise ValueError("Empty audio or invalid sample rate")
@@ -469,4 +471,22 @@ df = pd.DataFrame(row, index=[0])
 df.to_csv("feature.csv", index=False)
 print("Feature extraction complete. Saved to feature.csv")
 
+scaler = StandardScaler()
+scaler = joblib.load("scaler.pkl")
+df = scaler.transform(df)
 
+# 2. Reshape to (Samples, 24, 1)
+input_data = np.expand_dims(df, axis=-1)
+print(f"Shape going into model: {input_data.shape}") 
+# Should be (1, 24, 1) for a single file
+# 3. Predict silently to avoid the Unicode crash
+model = load_model("lightweight_cnn_model.h5")
+prediction = model.predict(input_data, verbose=0)
+score = prediction[0][0]
+label = "UNHEALTHY (Anomaly)" if score > 0.5 else "HEALTHY"
+confidence = score if score > 0.5 else 1 - score
+if score >= 0.5:
+    score = 1
+else:    
+    score = 0
+print(f"Predicted label: {score} (confidence: {confidence:.2f})")
