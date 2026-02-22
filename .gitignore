@@ -17,4 +17,6 @@ __pycache__/
 
 filePathMaker.py
 *.wav
+*.png
+*.mp4
 >>>>>>> 930cbd4 (Add inital Demo FrontEnd)
