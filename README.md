@@ -184,7 +184,7 @@ All outputs are stored locally on the SD card.
 
 ---
 
-## 1️⃣ Annotated Image
+## Annotated Image
 
 Includes:
 
@@ -202,7 +202,7 @@ Saved to:
 
 ---
 
-## 2️⃣ Annotated MP4 Clip
+## Annotated MP4 Clip
 
 Includes:
 
@@ -219,7 +219,7 @@ Saved to:
 
 ---
 
-## 3️⃣ CSV Log
+## CSV Log
 
 Saved to:
 
