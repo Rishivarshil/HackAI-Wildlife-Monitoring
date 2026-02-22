@@ -5,10 +5,9 @@ EdgeGuard is a **low-power, multimodal edge AI pipeline** for wildlife monitorin
 It performs:
 
 1. **Animal detection** using YOLOv8  
-2. **Species verification** using BioCLIP  
-3. **Conditional audio health classification** using a CNN on spectrograms  
-4. **Event logging and media storage** (JPG, MP4, CSV)  
-5. **Edge vs Desktop benchmarking**
+2. **Conditional audio health classification** using a CNN on spectrograms  
+3. **Event logging and media storage** (JPG, MP4, CSV)  
+4. **Edge vs Desktop benchmarking**
 
 ---
 
@@ -23,6 +22,7 @@ It performs:
 - [CSV Output Schema](#csv-output-schema)
 - [Full Pipeline Example](#full-pipeline-example)
 - [Benchmarking](#benchmarking)
+- [Benchmark Results: Intel Xeon vs Raspberry Pi 5](#benchmark-results-intel-xeon-vs-raspberry-pi-5)
 - [Energy Optimization](#energy-optimization)
 - [Repository Structure](#repository-structure)
 - [Success Metrics](#success-metrics)
@@ -74,7 +74,6 @@ Traditional camera traps require:
 - Python 3.9+
 - PyTorch
 - Ultralytics YOLOv8
-- open_clip (BioCLIP support)
 - OpenCV
 - Librosa
 - NumPy
@@ -88,7 +87,6 @@ Traditional camera traps require:
 pip install torch torchvision
 pip install ultralytics
 pip install opencv-python pillow numpy
-pip install open_clip_torch
 pip install librosa matplotlib
 ```
 
@@ -112,7 +110,7 @@ When PIR detects motion:
 
 ---
 
-## Step 2: Object Detection (YOLOv8 Lite)
+## Step 2: Object Detection (YOLOv8)
 
 ```bash
 python edgeguard_pipeline.py \
@@ -125,23 +123,19 @@ Output:
 
 - Bounding boxes  
 - Detection confidence  
-- Class IDs  
+- Class labels (from YOLO's 80 COCO classes)
 
 ---
 
-## Step 3: Species Filtering (BioCLIP)
+## Step 3: Species Filtering
 
-Each bounding box is classified using a predefined label list.
-
-```bash
---labels "white-tailed deer,deer,bird,other"
-```
+Detections are filtered using YOLO's native class labels.
 
 ### Filtering Logic
 
-- If label ≠ deer → discard detection  
-- If no deer remain → skip audio stage  
-- If deer detected → run audio model  
+- If class ≠ target animal (e.g., deer) → discard detection  
+- If no target animals remain → skip audio stage  
+- If target animal detected → run audio model  
 
 ---
 
@@ -193,7 +187,7 @@ Includes:
 
 - Bounding boxes  
 - YOLO confidence  
-- BioCLIP label  
+- Class label  
 - Health classification  
 - Timestamp  
 
@@ -242,8 +236,7 @@ One row per confirmed deer event.
 | image_path | String | Annotated image |
 | video_path | String | MP4 clip |
 | yolo_conf | Float | Detection confidence |
-| bioclip_label | String | Species prediction |
-| bioclip_score | Float | Similarity score |
+| yolo_class | String | YOLO class label |
 | anomaly_score | Float | Audio model output |
 | health_status | String | Classification result |
 | device | String | edge / desktop |
@@ -259,7 +252,6 @@ python edgeguard_pipeline.py \
   --image ./input/frame.jpg \
   --audio ./input/audio.wav \
   --conf 0.25 \
-  --labels "white-tailed deer,deer,bird" \
   --output-dir ./outputs \
   --device edge
 ```
@@ -295,6 +287,218 @@ Accuracy degradation formula:
 
 ---
 
+# Benchmark Results: Intel Xeon vs Raspberry Pi 5
+
+We conducted comparative benchmarks between a high-performance server CPU and an edge device to quantify the tradeoffs between compute power and energy efficiency.
+
+## Test Environment
+
+### Server Platform (OSC - Ohio Supercomputer Center)
+
+| Specification | Details |
+|--------------|---------|
+| **CPU** | Intel Xeon Gold 6148 |
+| **Clock Speed** | 2.4 GHz (base) / 3.7 GHz (turbo) |
+| **Cores** | 20 cores / 40 threads |
+| **Architecture** | Skylake-SP (14nm) |
+| **L3 Cache** | 27.5 MB |
+| **Memory Bandwidth** | 128 GB/s (6-channel DDR4-2666) |
+| **TDP** | 150W |
+| **Compute Mode** | CPU-only (CUDA disabled) |
+
+### Edge Platform (Raspberry Pi 5)
+
+| Specification | Details |
+|--------------|---------|
+| **CPU** | Broadcom BCM2712 (Arm Cortex-A76) |
+| **Clock Speed** | 2.4 GHz |
+| **Cores** | 4 cores / 4 threads |
+| **Architecture** | Arm v8.2-A (16nm) |
+| **L3 Cache** | 2 MB shared |
+| **Memory** | 8 GB LPDDR4X-4267 |
+| **TDP** | ~12W (under load) |
+| **Compute Mode** | CPU-only |
+
+---
+
+## Benchmark Configuration
+
+```yaml
+Model: YOLOv8n (nano)
+Inference Mode: CPU-only
+Confidence Threshold: 0.25
+Keep Threshold: 0.50
+Input Resolution: Native (no preprocessing resize)
+Batch Size: 1 (per-image inference)
+Resource Sampling: 1 second intervals (OSC) / 0.5 second intervals (Pi)
+```
+
+---
+
+## Performance Results
+
+### Computer Vision (YOLOv8) Pipeline
+
+| Metric | Intel Xeon Gold 6148 | Raspberry Pi 5 | Comparison |
+|--------|---------------------|----------------|------------|
+| **Total Runtime** | 40.46 s | 34.03 s | Pi 16% faster |
+| **Peak Process RAM** | 2,802.58 MB | 2,461.81 MB | Pi uses 12% less |
+| **Peak System Memory** | 7.1% | 44.2% | Xeon has more headroom |
+| **Peak CPU Utilization** | 6.1% | 44.5% | Pi runs near capacity |
+
+### Audio CNN Pipeline
+
+| Metric | Intel Xeon Gold 6148 | Raspberry Pi 5 | Raspberry Pi 5 (Optimized) |
+|--------|---------------------|----------------|---------------------------|
+| **Total Runtime** | 112.95 s | 94.10 s | 60.58 s |
+| **Peak Process RAM** | 12.19 MB | 1,173.83 MB | 1,013.39 MB |
+| **Peak CPU Utilization** | 17.2% | 48.0% | 46.5% |
+
+### Combined Pipeline Performance
+
+| Metric | Intel Xeon Gold 6148 | Raspberry Pi 5 (Optimized) |
+|--------|---------------------|---------------------------|
+| **Total Pipeline Time** | ~153.4 s | ~94.6 s |
+| **Vision + Audio Combined** | CV + CNN | CV + CNN (Optimized) |
+
+---
+
+## Resource Utilization Over Time
+
+### Intel Xeon Gold 6148 (OSC)
+
+**Computer Vision (YOLO):**
+- Startup RAM: 404.8 MB → Peak: 2,802.58 MB
+- CPU remained low (0.3% – 6.1%) due to 20-core architecture
+- Disk usage stable at ~29.1 GB used / 160.9 GB free
+
+**Audio CNN:**
+- Extremely lightweight: constant 12.19 MB RAM
+- CPU: ~10-17% utilization
+- Two-phase execution visible: preprocessing (~70s) + inference (~35s)
+
+### Raspberry Pi 5
+
+**Computer Vision (YOLO):**
+- Startup RAM: 1.05 MB → Peak: 2,461.81 MB
+- CPU consistently high (35-45%) — fully utilizing 4 cores
+- System memory peaked at 44.2%
+
+**Audio CNN:**
+- RAM: peaked at 1,173.83 MB (standard) / 1,013.39 MB (optimized)
+- CPU: 36-48% utilization
+- Optimized version reduced runtime by 36%
+
+---
+
+## Analysis
+
+### Performance Gap
+
+Both platforms operate at identical base clock speeds (2.4 GHz), making this a direct comparison of:
+
+1. **Core count**: 20 cores (Xeon) vs 4 cores (Pi5)
+2. **Architecture efficiency**: Skylake x86 vs Cortex-A76 ARM
+3. **Memory subsystem**: 128 GB/s bandwidth vs ~34 GB/s
+4. **Cache hierarchy**: 27.5 MB L3 vs 2 MB L3
+
+### Key Findings
+
+**Surprising Result: Raspberry Pi 5 outperformed Intel Xeon on both pipelines**
+
+This counterintuitive result is explained by:
+
+1. **Single-threaded workload**: YOLOv8n inference is largely single-threaded, negating the Xeon's core count advantage
+2. **Memory efficiency**: ARM architecture's tighter memory integration benefits inference workloads
+3. **CPU-only mode**: The Xeon's strengths (AVX-512, massive parallelism) are underutilized without GPU offload
+4. **Thermal constraints**: OSC batch environment may have thermal throttling
+
+**Intel Xeon Gold 6148 Advantages:**
+- Massive memory headroom (6.5-7.1% system usage vs 44%)
+- Better suited for parallel batch processing
+- Lower per-core utilization leaves room for concurrent tasks
+- Superior for training workloads
+
+**Raspberry Pi 5 Advantages:**
+- Faster single-stream inference
+- ~12.5x lower power consumption (12W vs 150W)
+- Deployable in remote/off-grid locations
+- Lower cost per node ($80 vs $3,000+)
+- Sufficient for real-time single-image inference
+
+### Energy Efficiency
+
+| Metric | Intel Xeon Gold 6148 | Raspberry Pi 5 |
+|--------|---------------------|----------------|
+| **TDP** | 150W | ~12W |
+| **CV Pipeline Energy** | ~6,069 J | ~408 J |
+| **Energy Ratio** | 1x | **14.9x more efficient** |
+
+> [!IMPORTANT]
+> Both platforms produce **identical inference results** when using the same model weights. The accuracy degradation is **0%** — only latency and resource usage differ.
+
+---
+
+## Running the Benchmark
+
+### On OSC (Intel Xeon)
+
+```bash
+# SSH into OSC
+ssh username@owens.osc.edu
+
+# Navigate to project directory
+cd /fs/scratch/PAS2136/EdgeGuard
+
+# Run benchmark script
+python src/osc_monitor.py
+```
+
+### On Raspberry Pi 5
+
+```bash
+# Run benchmark script
+python src/animalClassifierTelemtry.py
+```
+
+### Output Files
+
+Both scripts generate:
+
+| File | Description |
+|------|-------------|
+| `detections.csv` | Detection results with confidence scores |
+| `resource_log_cpu_only.csv` | Time-series resource utilization |
+
+---
+
+## Resource Log Schema
+
+| Column | Type | Description |
+|--------|------|-------------|
+| timestamp | ISO datetime | Sample time |
+| elapsed_s | Float | Seconds since start |
+| cpu_percent_total | Float | System CPU utilization |
+| proc_rss_mb | Float | Process memory (MB) |
+| sys_mem_percent | Float | System memory utilization |
+| disk_used_gb | Float | Disk space used |
+| disk_free_gb | Float | Disk space available |
+
+---
+
+## Visualization
+
+To generate comparison charts from benchmark logs:
+
+```bash
+python scripts/plot_benchmarks.py \
+  --xeon results/xeon_resource_log.csv \
+  --pi5 results/pi5_resource_log.csv \
+  --output benchmark_comparison.png
+```
+
+---
+
 # Energy Optimization
 
 - Event-driven execution  
@@ -312,15 +516,26 @@ Accuracy degradation formula:
 EdgeGuard/
 │
 ├── edgeguard_pipeline.py
+├── src/
+│   ├── main.py                    # Audio feature extraction + CNN
+│   ├── osc_monitor.py             # OSC benchmark script
+│   ├── animalClassifierTelemtry.py # Pi benchmark script
+│   └── Requirements.txt
+│
 ├── models/
-│   ├── yolov8_lite.pt
-│   ├── bioclip_model.pt
-│   └── audio_cnn.pt
+│   ├── yolov8n.pt
+│   ├── audio_cnn.pt
+│   ├── lightweight_cnn_model.h5
+│   └── scaler.pkl
 │
 ├── outputs/
 │   ├── images/
 │   ├── videos/
 │   └── logs/
+│
+├── results/
+│   ├── xeon_resource_log.csv
+│   └── pi5_resource_log.csv
 │
 └── README.md
 ```
@@ -343,6 +558,12 @@ EdgeGuard/
 - Inference latency under 500ms (vision)
 - Minimal accuracy degradation
 - Reduced memory footprint
+
+## Benchmark Goals
+
+- Document performance gap between server and edge
+- Validate identical accuracy across platforms
+- Quantify energy efficiency advantage of edge deployment
 
 ---
 
@@ -379,3 +600,18 @@ EdgeGuard demonstrates:
 
 The innovation is not just detection —  
 it is **optimized, measurable, deployable AI for environmental impact**.
+
+---
+
+# Citation
+
+If you use EdgeGuard in your research, please cite:
+
+```bibtex
+@software{edgeguard2025,
+  title = {EdgeGuard: Low-Power Multimodal Edge AI for Wildlife Monitoring},
+  year = {2025},
+  author = {Your Name},
+  url = {https://github.com/yourusername/EdgeGuard}
+}
+```
