@@ -1,0 +1,3 @@
+file,Call type,Mean F0,Max F0, Min F0, Range F0,Q25%,Q50%,Q75%,Fpeak,sound duration,AM var,AM rate,AM extent,harmonicity, F1 mean,F2 mean,F3 mean,F4 mean,F5 mean,F6 mean,F7 mean,F8 mean,formant dispersal,vocal tract length,mean wiener entropy,Comment,
+LFC_08.00.wav,LFC,98.023,111.693,73.629,38.064,146.205,261.299,530.685,98.258,0.842,46.703,11.876,3.932,5.50,288.657,560.871,1074.384,1503.157,1805.952,2418.596,2814.490,3210.114,417.351,41.931,-0.756,,
+LFC_10.30.wav,LFC,80.184,108.633,61.342,47.291,273.206,356.313,714.207,113.411,1.133,44.299,11.475,3.860,4.25,311.632,642.321,1087.546,1418.121,1731.709,2403.159,2765.556,3280.611,424.140,41.260,-0.993,,
