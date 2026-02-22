@@ -8,7 +8,6 @@ import cv2
 from ultralytics import YOLO
 import torch
 # Allow the YOLO model structure to pass through PyTorch's security filter
-torch.serialization.add_safe_globals(['ultralytics.nn.tasks.DetectionModel'])
 
 from ultralytics import YOLO
 model = YOLO("yolov8n.pt")
@@ -107,7 +106,10 @@ frame_files = sorted(
 if frame_files:
     first = cv2.imread(frame_files[0])
     h, w = first.shape[:2]
-    out = cv2.VideoWriter("output.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
+    # Change 'mp4v' to 'avc1'
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+    out = cv2.VideoWriter('output.mp4', fourcc, fps, (w, h))
+    #out = cv2.VideoWriter("output.mp4", cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
     for fp in frame_files:
         frame = cv2.imread(fp)
         if frame is not None:

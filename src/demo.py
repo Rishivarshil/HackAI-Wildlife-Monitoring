@@ -59,49 +59,48 @@ if uploaded_file is not None:
 
         file_ext = suffix.lower()[1:]
 
-
-        with st.spinner("Processing... please wait."):
-            boundingbox = subprocess.run(
-                ["py", "-3.12", "animalClassifier.py", temp_input_path],
-                capture_output=True,
-                text=True
-            )
-            
-            st.write("Return code:", boundingbox.returncode)
-            
-            if boundingbox.returncode != 0:
-                st.error("Backend processing failed.")
-                st.text_area("Error Log:", boundingbox.stderr) # Helpful for debugging
-            else:
-                st.success("Processing complete.")
+        if file_ext == "mp4":
+            with st.spinner("Processing... please wait."):
+                boundingbox = subprocess.run(
+                    ["py", "-3.12", "animalClassifier.py", temp_input_path],
+                    capture_output=True,
+                    text=True
+                )
                 
-                # Define the path where animalClassifier.py saves the file
-                output_video_path = "output.mp4"
+                st.write("Return code:", boundingbox.returncode)
                 
-                # Check if the file actually exists before trying to display it
-                if os.path.exists(output_video_path):
-                    st.write("### Resulting Detection Video")
-                    
-                    # Use st.video to render the mp4 file
-                    with open(output_video_path, 'rb') as video_file:
-                        video_bytes = video_file.read()
-                        st.video(video_bytes)
-                        
-                    # Optional: Provide a download button for the processed video
-                    st.download_button(
-                        label="Download Processed Video",
-                        data=video_bytes,
-                        file_name="processed_wildlife.mp4",
-                        mime="video/mp4"
-                    )
+                if boundingbox.returncode != 0:
+                    st.error("Backend processing failed.")
+                    st.text_area("Error Log:", boundingbox.stderr) # Helpful for debugging
                 else:
-                    st.warning("Processing finished, but output.mp4 was not found.")
+                    st.success("Processing complete.")
+                    
+                    # Define the path where animalClassifier.py saves the file
+                    output_video_path = "output.mp4"
+                    
+                    # Check if the file actually exists before trying to display it
+                    if os.path.exists(output_video_path):
+                        st.write("### Resulting Detection Video")
+                        
+                        # Use st.video to render the mp4 file
+                        with open(output_video_path, 'rb') as video_file:
+                            video_bytes = video_file.read()
+                            st.video(video_bytes)
+                            
+                        # Optional: Provide a download button for the processed video
+                        st.download_button(
+                            label="Download Processed Video",
+                            data=video_bytes,
+                            file_name="processed_wildlife.mp4",
+                            mime="video/mp4"
+                        )
+                    else:
+                        st.warning("Processing finished, but output.mp4 was not found.")
 
             
         # ------------------------------------------------------------
         # Convert MP4 → WAV if needed
         # ------------------------------------------------------------
-        if file_ext == "mp4":
             st.info("Converting MP4 to WAV...")
             input_path = convert_mp4_to_wav(temp_input_path)
         else:
