@@ -2,6 +2,9 @@ import os
 import sys
 import shutil
 import cv2
+import sys
+import shutil
+import cv2
 from ultralytics import YOLO
 import torch
 # Allow the YOLO model structure to pass through PyTorch's security filter
@@ -12,6 +15,35 @@ model = YOLO("yolov8n.pt")
 # Load a pretrained YOLOv8n model
 model = YOLO("yolov8n.pt")
 
+# Input video path
+mp4_input = sys.argv[1] if len(sys.argv) > 1 else "input.mp4"
+
+frames_dir = "frames"
+output_dir = "demo_output"
+
+# Clear and recreate working dirs
+shutil.rmtree(frames_dir, ignore_errors=True)
+shutil.rmtree(output_dir, ignore_errors=True)
+os.makedirs(frames_dir)
+os.makedirs(output_dir)
+
+# Extract frames using OpenCV
+cap = cv2.VideoCapture(mp4_input)
+fps = cap.get(cv2.CAP_PROP_FPS) or 30
+print(f"📽️ Input: {mp4_input} @ {fps}fps")
+print("🖼️ Extracting frames...")
+frame_idx = 0
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+    frame_idx += 1
+    cv2.imwrite(os.path.join(frames_dir, f"frame_{frame_idx:05d}.jpg"), frame)
+cap.release()
+print(f"   {frame_idx} frames extracted")
+
+# Run YOLO inference on extracted frames
+results = model(frames_dir, save=False, conf=0.25)
 # Input video path
 mp4_input = sys.argv[1] if len(sys.argv) > 1 else "input.mp4"
 
@@ -83,4 +115,4 @@ if frame_files:
     out.release()
     print(f"   {len(frame_files)} frames written")
 
-print("\n✅ Done. output.mp4 saved.")
+print("\n✅ Done. Results saved to runs/detect/predict")
