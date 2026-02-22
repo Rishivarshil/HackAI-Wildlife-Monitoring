@@ -126,7 +126,7 @@ Output:
 
 - Bounding boxes  
 - Detection confidence  
-- Class labels (from YOLO's 80 COCO classes)
+- Class labels
 
 ---
 
@@ -180,7 +180,7 @@ ELSE:
 
 # Outputs
 
-All outputs are stored locally on the SD card.
+Currently all outputs are stored locally on the SD card.
 
 ---
 
