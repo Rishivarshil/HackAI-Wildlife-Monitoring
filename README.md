@@ -691,7 +691,7 @@ EdgeGuard/
 
 Future expansions may include:
 
-- Solar-powered deployment  
+- Remote Cloud Upload  
 - Multi-species classification  
 - Real-time conservation alerts  
 - Federated learning  
