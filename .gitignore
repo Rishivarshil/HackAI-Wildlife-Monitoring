@@ -11,4 +11,9 @@ __pycache__/
 
 # Mac junk
 .DS_Store
+<<<<<<< HEAD
 >>>>>>> e7d7936 (Initial commit)
+=======
+
+filePathMaker.py
+>>>>>>> 930cbd4 (Add inital Demo FrontEnd)
