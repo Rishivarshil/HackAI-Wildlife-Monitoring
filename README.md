@@ -348,15 +348,15 @@ Resource Sampling: 1 second intervals (OSC) / 0.5 second intervals (Pi)
 
 ### Audio CNN Pipeline
 
-| Metric | Intel Xeon Gold 6148 | Raspberry Pi 5 | Raspberry Pi 5 (Optimized) |
+| Metric | Intel Xeon Gold 6148| Raspberry Pi 5 (Optimized) |
 |--------|---------------------|----------------|---------------------------|
-| **Total Runtime** | 112.95 s | 94.10 s | 60.58 s |
-| **Peak Process RAM** | 12.19 MB | 1,173.83 MB | 1,013.39 MB |
-| **Peak CPU Utilization** | 17.2% | 48.0% | 46.5% |
+| **Total Runtime** | 112.95 s | 60.58 s |
+| **Peak Process RAM** | 12.19 MB | 1,013.39 MB |
+| **Peak CPU Utilization** | 17.2% | 46.5% |
 
 ### Combined Pipeline Performance
 
-| Metric | Intel Xeon Gold 6148 | Raspberry Pi 5 (Optimized) |
+| Metric | Intel Xeon Gold 6148 | Raspberry Pi 5 |
 |--------|---------------------|---------------------------|
 | **Total Pipeline Time** | ~153.4 s | ~94.6 s |
 | **Vision + Audio Combined** | CV + CNN | CV + CNN (Optimized) |
@@ -600,18 +600,3 @@ EdgeGuard demonstrates:
 
 The innovation is not just detection —  
 it is **optimized, measurable, deployable AI for environmental impact**.
-
----
-
-# Citation
-
-If you use EdgeGuard in your research, please cite:
-
-```bibtex
-@software{edgeguard2025,
-  title = {EdgeGuard: Low-Power Multimodal Edge AI for Wildlife Monitoring},
-  year = {2025},
-  author = {Your Name},
-  url = {https://github.com/yourusername/EdgeGuard}
-}
-```
